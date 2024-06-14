@@ -1,0 +1,66 @@
+version: "3.8"
+
+services:
+  mysql:
+    image: mysql:8
+    environment:
+      MYSQL_ROOT_PASSWORD: rootroot
+      MYSQL_DATABASE: lunch_order
+    volumes:
+      - mysql_data:/var/lib/mysql
+    ports:
+      - "3306:3306"
+
+  user:
+    build:
+      context: ./server_user
+      dockerfile: Dockerfile
+    depends_on:
+      - mysql
+    command: >
+      sh -c "
+      npm install &&
+      npx sequelize db:migrate;
+      npx sequelize db:seed:all;
+      npm start"
+    ports:
+      - "8000:8000"
+
+  group:
+    build:
+      context: ./server_group
+      dockerfile: Dockerfile
+    depends_on:
+      - user
+    command: >
+      sh -c "
+      npm install &&
+      npx sequelize db:migrate;
+      npx sequelize db:seed:all;
+      npm start"
+    ports:
+      - "8001:8001"
+
+  order:
+    build:
+      context: ./server_order
+      dockerfile: Dockerfile
+    depends_on:
+      - group
+    command: >
+      sh -c "
+      npm install &&
+      npx sequelize db:migrate;
+      npm start"
+    ports:
+      - "8002:8002"
+
+  web:
+    build:
+      context: ./client
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+
+volumes:
+  mysql_data:
